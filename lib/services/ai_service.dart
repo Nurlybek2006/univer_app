@@ -5,7 +5,7 @@ import '../models/message_model.dart';
 /// OpenAI API арқылы AI көмекшісі сервисі
 class AiService {
   // ⚠️ API кілтіңізді осында қойыңыз
-  static const String _apiKey = 'YOUR_OPENAI_API_KEY';
+  static const String _apiKey = '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';
   static const String _apiUrl = 'https://api.openai.com/v1/chat/completions';
 
   // Жүйелік нұсқаулық — AI-ға контекст береді

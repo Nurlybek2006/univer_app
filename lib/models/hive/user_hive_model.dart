@@ -32,6 +32,9 @@ class UserHiveModel extends HiveObject {
   @HiveField(8)
   late String role; // 'student' | 'admin'
 
+  @HiveField(9)
+  String? photoUrl;
+
   UserHiveModel({
     required this.uid,
     required this.email,
@@ -42,6 +45,7 @@ class UserHiveModel extends HiveObject {
     required this.studentId,
     required this.phone,
     required this.role,
+    this.photoUrl,
   });
 
   Map<String, dynamic> toFirestore() => {
@@ -54,6 +58,7 @@ class UserHiveModel extends HiveObject {
         'studentId': studentId,
         'phone': phone,
         'role': role,
+        'photoUrl': photoUrl,
       };
 
   factory UserHiveModel.fromFirestore(Map<String, dynamic> data) =>
@@ -67,5 +72,6 @@ class UserHiveModel extends HiveObject {
         studentId: data['studentId'] ?? '',
         phone: data['phone'] ?? '',
         role: data['role'] ?? 'student',
+        photoUrl: data['photoUrl'] as String?,
       );
 }

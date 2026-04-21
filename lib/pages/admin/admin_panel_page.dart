@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../login_page.dart';
+import 'admin_messages_page.dart';
 import 'admin_students_page.dart';
 import 'admin_schedule_page.dart';
 import 'admin_news_page.dart';
@@ -23,6 +24,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage> {
     AdminSchedulePage(),
     AdminNewsPage(),
     AdminQuizPage(),
+    AdminMessagesPage(),
   ];
 
   @override
@@ -92,6 +94,11 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage> {
                 icon: Icon(Icons.quiz_outlined),
                 selectedIcon: Icon(Icons.quiz),
                 label: Text('Тест'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.send_outlined),
+                selectedIcon: Icon(Icons.send),
+                label: Text('Хабарлама'),
               ),
             ],
           ),

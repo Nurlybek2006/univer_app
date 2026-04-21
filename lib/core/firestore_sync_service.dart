@@ -4,6 +4,7 @@ import '../models/hive/schedule_hive_model.dart';
 import '../models/hive/news_hive_model.dart';
 import '../models/hive/quiz_hive_model.dart';
 import '../models/hive/free_time_hive_model.dart';
+import '../services/notification_service.dart';
 import 'hive_service.dart';
 
 /// Firestore → Hive синхрондау сервисі
@@ -207,5 +208,34 @@ class FirestoreSyncService {
   Future<void> deleteFreeTimeSuggestion(String id) async {
     await _db.collection('free_time_suggestions').doc(id).delete();
     HiveService.freeTime.delete(id);
+  }
+
+  // ──────────────────────────── MESSAGES ────────────────────────────
+
+  /// Admin → белгілі бір студентке жеке хабарлама жіберу
+  Future<void> sendMessage({
+    required String studentId,
+    required String title,
+    required String body,
+    required String senderName,
+  }) async {
+    await _db.collection('messages').add({
+      'studentId': studentId,
+      'title': title,
+      'body': body,
+      'sender': senderName,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+  }
+
+  // ──────────────────────────── NOTIFICATIONS ────────────────────────────
+
+  /// Жергілікті хабарламаны көрсету (Firestore-сыз жылдам хабарлама)
+  Future<void> triggerLocalNotification({
+    required String title,
+    required String body,
+  }) async {
+    await NotificationService().showNotification(title: title, body: body);
   }
 }

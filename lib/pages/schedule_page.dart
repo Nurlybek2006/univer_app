@@ -55,20 +55,28 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
             onPressed: () => ref.invalidate(scheduleProvider),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: List.generate(6, (i) {
-            final isToday = DateTime.now().weekday == i + 1;
-            return Tab(
-              child: Text(
-                _dayNames[i],
-                style: TextStyle(
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.55),
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            tabs: List.generate(6, (i) {
+              final isToday = DateTime.now().weekday == i + 1;
+              return Tab(
+                child: Text(
+                  _dayNames[i],
+                  style: TextStyle(
+                    fontWeight:
+                        isToday ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-            );
-          }),
-          indicatorColor: colorScheme.primary,
+              );
+            }),
+          ),
         ),
       ),
       body: scheduleAsync.when(

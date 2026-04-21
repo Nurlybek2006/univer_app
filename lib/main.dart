@@ -7,14 +7,15 @@ import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/admin/admin_panel_page.dart';
 import 'providers/app_providers.dart';
+import 'services/notification_service.dart';
 // TODO: ФлуттерФайр CLI арқылы жасалған файл: `flutterfire configure`
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebaseды инициализациялау (файл жасалғаннан кейін осыны ашыңыз)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await HiveService.init();
+  await NotificationService().init();
   runApp(const ProviderScope(child: StudentAssistantApp()));
 }
 
@@ -26,8 +27,13 @@ class StudentAssistantApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authServiceProvider);
 
+    // Сессия жүктелуін күту (restoreSession async)
     Widget home;
-    if (auth.currentUser == null) {
+    if (auth.isLoading) {
+      home = const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    } else if (auth.currentUser == null) {
       home = const LoginPage();
     } else if (auth.currentUser!.role == 'admin') {
       home = const AdminPanelPage();
@@ -39,6 +45,8 @@ class StudentAssistantApp extends ConsumerWidget {
       title: 'Студент Көмекшісі',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ref.watch(themeProvider),
       home: home,
     );
   }

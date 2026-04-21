@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/hive/user_hive_model.dart';
+import '../services/notification_service.dart';
 import 'firestore_sync_service.dart';
 import 'hive_service.dart';
 
@@ -22,16 +23,36 @@ class AuthService extends ChangeNotifier {
   /// Қосымша іске қосылғанда бар сессияны жүктеу
   Future<void> restoreSession() async {
     final firebaseUser = _auth.currentUser;
-    if (firebaseUser != null) {
-      // Алдымен Hive кэшінен жүктеу (жылдам)
-      _currentUser = HiveService.users.get(firebaseUser.uid);
+    if (firebaseUser == null) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    // Алдымен Hive кэшінен жүктеу (жылдам)
+    _currentUser = HiveService.users.get(firebaseUser.uid);
+    if (_currentUser != null) {
+      // Кэш бар — бірден UI көрсет, фонда жаңарт
+      _isLoading = false;
       notifyListeners();
-      // Фонда Firestore-дан жаңарту
+      // Студент үшін хабарлама тыңдаушыны қайта іске қос
+      if (_currentUser!.role == 'student') {
+        NotificationService().listenForMessages(_currentUser!.uid);
+      }
       final fresh = await _sync.fetchAndCacheUser(firebaseUser.uid);
       if (fresh != null) {
         _currentUser = fresh;
         notifyListeners();
       }
+    } else {
+      // Кэш жоқ — Firestore-дан күт
+      final fresh = await _sync.fetchAndCacheUser(firebaseUser.uid);
+      _currentUser = fresh;
+      _isLoading = false;
+      // Студент үшін хабарлама тыңдаушы
+      if (fresh != null && fresh.role == 'student') {
+        NotificationService().listenForMessages(fresh.uid);
+      }
+      notifyListeners();
     }
   }
 
@@ -57,6 +78,11 @@ class AuthService extends ChangeNotifier {
       _currentUser = user;
       _isLoading = false;
       notifyListeners();
+      // Студент үшін: FCM токен + хабарлама тыңдаушы
+      if (user.role == 'student') {
+        NotificationService().requestPermissionAndSaveToken(user.uid);
+        NotificationService().listenForMessages(user.uid);
+      }
       return true;
     } on FirebaseAuthException catch (e) {
       _errorMessage = _mapAuthError(e.code);

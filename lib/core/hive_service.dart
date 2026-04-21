@@ -12,6 +12,7 @@ class HiveService {
   static const String newsBox = 'news';
   static const String quizBox = 'quiz';
   static const String freeTimeBox = 'freeTime';
+  static const String settingsBox = 'settings';
 
   static Future<void> init() async {
     await Hive.initFlutter();
@@ -30,6 +31,7 @@ class HiveService {
     await Hive.openBox<NewsHiveModel>(newsBox);
     await Hive.openBox<QuizCategoryHiveModel>(quizBox);
     await Hive.openBox<FreeTimeHiveModel>(freeTimeBox);
+    await Hive.openBox(settingsBox); // параметрсіз — dynamic мәндер үшін
   }
 
   static Box<UserHiveModel> get users => Hive.box<UserHiveModel>(usersBox);
@@ -40,4 +42,5 @@ class HiveService {
       Hive.box<QuizCategoryHiveModel>(quizBox);
   static Box<FreeTimeHiveModel> get freeTime =>
       Hive.box<FreeTimeHiveModel>(freeTimeBox);
+  static Box get settings => Hive.box(settingsBox);
 }
