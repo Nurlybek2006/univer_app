@@ -51,6 +51,48 @@ final notificationsProvider =
     StateNotifierProvider<NotificationsNotifier, bool>(
         (ref) => NotificationsNotifier());
 
+// ─── Coins провайдері ──────────────────────────────────────────────
+
+class CoinsNotifier extends StateNotifier<int> {
+  CoinsNotifier() : super(_load());
+
+  static int _load() =>
+      HiveService.settings.get('coins', defaultValue: 0) as int;
+
+  void add(int amount) {
+    final next = state + amount;
+    HiveService.settings.put('coins', next);
+    state = next;
+  }
+}
+
+final coinsProvider =
+    StateNotifierProvider<CoinsNotifier, int>((ref) => CoinsNotifier());
+
+// ─── Аяқталған тесттер провайдері ─────────────────────────────────
+
+class CompletedQuizzesNotifier extends StateNotifier<Set<String>> {
+  CompletedQuizzesNotifier() : super(_load());
+
+  static Set<String> _load() {
+    final list = HiveService.settings
+        .get('completedQuizIds', defaultValue: <dynamic>[]) as List;
+    return Set<String>.from(list.map((e) => e.toString()));
+  }
+
+  bool isCompleted(String quizId) => state.contains(quizId);
+
+  void markCompleted(String quizId) {
+    final next = {...state, quizId};
+    HiveService.settings.put('completedQuizIds', next.toList());
+    state = next;
+  }
+}
+
+final completedQuizzesProvider =
+    StateNotifierProvider<CompletedQuizzesNotifier, Set<String>>(
+        (ref) => CompletedQuizzesNotifier());
+
 // ─── Негізгі сервистер ───────────────────────────────────────────
 
 final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {
