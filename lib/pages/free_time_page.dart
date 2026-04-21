@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import '../models/schedule_model.dart';
-import '../services/schedule_service.dart';
+import '../models/hive/schedule_hive_model.dart';
 
 /// Бос уақыт ұсыныстары беті
 /// Сабақ кестесімен динамикалық байланысқан
 class FreeTimePage extends StatelessWidget {
-  final ScheduleService scheduleService;
+  final List<ScheduleHiveModel> scheduleItems;
 
-  const FreeTimePage({super.key, required this.scheduleService});
+  const FreeTimePage({super.key, required this.scheduleItems});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final todayClasses = scheduleService.getTodaySchedule();
-    final freeMinutes = scheduleService.getFreeTimeMinutes();
     final int today = DateTime.now().weekday;
-    final String todayName =
-        today <= 6 ? ScheduleItem.dayName(today) : 'Жексенбі';
+    final todayClasses = scheduleItems.where((i) => i.dayOfWeek == today).toList();
+    final freeMinutes = _calcFreeMinutes(todayClasses);
+    final String todayName = _dayName(today);
 
     // Бос уақытқа байланысты ұсыныстар
     final suggestions = _getSuggestions(freeMinutes);
@@ -52,7 +50,7 @@ class FreeTimePage extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 12),
-            ...suggestions.map((s) => _buildSuggestionCard(s, colorScheme)),
+                ...suggestions.map((s) => _buildSuggestionCard(s, colorScheme)),
 
             const SizedBox(height: 16),
 
@@ -286,9 +284,29 @@ class FreeTimePage extends StatelessWidget {
       ),
     );
   }
+  String _dayName(int d) {
+    const n = ['', 'Дүйсенбі', 'Сейсенбі', 'Сәрсенбі', 'Бейсенбі', 'Жұма', 'Сенбі', 'Жексенбі'];
+    return d < n.length ? n[d] : '';
+  }
 
+  int _calcFreeMinutes(List<ScheduleHiveModel> items) {
+    if (items.isEmpty) return 480; // 8сағат = бос күн
+    // Бірінші сабақтан соңғысына дейін тотал сабақ ұзақтығы
+    int busyMinutes = items.fold(0, (sum, i) {
+      final start = _parseTime(i.startTime);
+      final end = _parseTime(i.endTime);
+      return sum + (end - start).clamp(0, 600);
+    });
+    return (480 - busyMinutes).clamp(0, 480);
+  }
+
+  int _parseTime(String t) {
+    final parts = t.split(':');
+    if (parts.length < 2) return 0;
+    return (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+  }
   /// Мини сабақ элементі
-  Widget _buildMiniScheduleItem(ScheduleItem item, ColorScheme colorScheme) {
+  Widget _buildMiniScheduleItem(ScheduleHiveModel item, ColorScheme colorScheme) {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       child: Padding(

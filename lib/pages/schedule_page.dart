@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/schedule_model.dart';
-import '../services/schedule_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/hive/schedule_hive_model.dart';
+import '../providers/app_providers.dart';
 import 'free_time_page.dart';
 
 /// Сабақ кестесі беті
-class SchedulePage extends StatefulWidget {
+class SchedulePage extends ConsumerStatefulWidget {
   const SchedulePage({super.key});
 
   @override
-  State<SchedulePage> createState() => _SchedulePageState();
+  ConsumerState<SchedulePage> createState() => _SchedulePageState();
 }
 
-class _SchedulePageState extends State<SchedulePage>
+class _SchedulePageState extends ConsumerState<SchedulePage>
     with SingleTickerProviderStateMixin {
-  final ScheduleService _scheduleService = ScheduleService();
   late TabController _tabController;
 
   // Апта күндері (Дүйсенбі - Сенбі)
@@ -43,10 +43,18 @@ class _SchedulePageState extends State<SchedulePage>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final scheduleAsync = ref.watch(scheduleProvider);
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Сабақ кестесі'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(scheduleProvider),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: List.generate(6, (i) {
@@ -63,19 +71,31 @@ class _SchedulePageState extends State<SchedulePage>
           indicatorColor: colorScheme.primary,
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: List.generate(6, (i) {
-          return _buildDaySchedule(i + 1, colorScheme);
-        }),
+      body: scheduleAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Кесте жүктелмеді: $e')),
+        data: (allItems) {
+          // Студенттің тобына қарай сүзу
+          final group = user?.group ?? '';
+          final filtered = allItems.where((item) {
+            if (item.groups.isEmpty) return true;
+            return item.groups.contains(group);
+          }).toList();
+          return TabBarView(
+            controller: _tabController,
+            children: List.generate(6, (i) {
+              return _buildDaySchedule(i + 1, filtered, colorScheme);
+            }),
+          );
+        },
       ),
-      // Бос уақыт ұсыныстарына өту батырмасы
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
+          final all = ref.read(scheduleProvider).value ?? [];
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => FreeTimePage(scheduleService: _scheduleService),
+              builder: (_) => FreeTimePage(scheduleItems: all),
             ),
           );
         },
@@ -86,9 +106,10 @@ class _SchedulePageState extends State<SchedulePage>
   }
 
   /// Белгілі бір күндегі сабақтар тізімі
-  Widget _buildDaySchedule(int dayOfWeek, ColorScheme colorScheme) {
-    final items = _scheduleService.getScheduleForDay(dayOfWeek);
-    final dayFullName = ScheduleItem.dayName(dayOfWeek);
+  Widget _buildDaySchedule(int dayOfWeek, List<ScheduleHiveModel> allItems, ColorScheme colorScheme) {
+    final items = allItems.where((i) => i.dayOfWeek == dayOfWeek).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final dayFullName = _dayFullName(dayOfWeek);
 
     if (items.isEmpty) {
       return Center(
@@ -131,8 +152,13 @@ class _SchedulePageState extends State<SchedulePage>
     );
   }
 
+  String _dayFullName(int d) {
+    const names = ['', 'Дүйсенбі', 'Сейсенбі', 'Сәрсенбі', 'Бейсенбі', 'Жұма', 'Сенбі'];
+    return d < names.length ? names[d] : '';
+  }
+
   /// Сабақ карточкасы
-  Widget _buildScheduleCard(ScheduleItem item, ColorScheme colorScheme) {
+  Widget _buildScheduleCard(ScheduleHiveModel item, ColorScheme colorScheme) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(

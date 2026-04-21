@@ -16,12 +16,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const AiAssistantPage(),
-    const SchedulePage(),
+  final List<Widget> _pages = const [
+    AiAssistantPage(),
+    SchedulePage(),
     NewsPage(),
     QuizPage(),
-    const ProfilePage(),
+    ProfilePage(),
   ];
 
   @override

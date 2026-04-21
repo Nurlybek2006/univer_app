@@ -1,28 +1,42 @@
 import 'package:flutter/material.dart';
-import '../models/quiz_model.dart';
-import '../services/quiz_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/hive/quiz_hive_model.dart';
+import '../providers/app_providers.dart';
 
 /// Тест/Ойын беті
-class QuizPage extends StatelessWidget {
-  QuizPage({super.key});
-
-  final QuizService _quizService = QuizService();
+class QuizPage extends ConsumerWidget {
+  const QuizPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final categories = _quizService.getCategories();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quizAsync = ref.watch(quizProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Тест & Ойын'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(quizProvider),
+          ),
+        ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          return _buildCategoryCard(context, category, colorScheme, index);
+      body: quizAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Қате: $e')),
+        data: (categories) {
+          if (categories.isEmpty) {
+            return const Center(child: Text('Тест жоқ'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return _buildCategoryCard(context, category, colorScheme, index);
+            },
+          );
         },
       ),
     );
@@ -31,7 +45,7 @@ class QuizPage extends StatelessWidget {
   /// Санат карточкасы
   Widget _buildCategoryCard(
     BuildContext context,
-    QuizCategory category,
+    QuizCategoryHiveModel category,
     ColorScheme colorScheme,
     int index,
   ) {
@@ -111,7 +125,7 @@ class QuizPage extends StatelessWidget {
 
 /// Тест ойнау беті
 class _QuizPlayPage extends StatefulWidget {
-  final QuizCategory category;
+  final QuizCategoryHiveModel category;
 
   const _QuizPlayPage({required this.category});
 
@@ -125,7 +139,7 @@ class _QuizPlayPageState extends State<_QuizPlayPage> {
   int? _selectedOption;
   bool _answered = false;
 
-  QuizQuestion get _currentQuestion =>
+  QuizQuestionHiveModel get _currentQuestion =>
       widget.category.questions[_currentIndex];
 
   bool get _isLastQuestion =>

@@ -1,27 +1,27 @@
-import 'package:flutter/material.dart';
-import '../models/profile_model.dart';
-import '../services/profile_service.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/hive/user_hive_model.dart';
+import '../core/firestore_sync_service.dart';
+import '../providers/app_providers.dart';
+import 'login_page.dart';
 
 /// Профиль беті — студент ақпаратын көрсету және өңдеу
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  final ProfileService _profileService = ProfileService();
-  StudentProfile? _profile;
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _isEditing = false;
+  bool _saving = false;
 
-  // Өңдеу контроллерлері
   late TextEditingController _nameController;
   late TextEditingController _groupController;
   late TextEditingController _facultyController;
   late TextEditingController _courseController;
   late TextEditingController _studentIdController;
-  late TextEditingController _emailController;
   late TextEditingController _phoneController;
 
   @override
@@ -32,9 +32,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _facultyController = TextEditingController();
     _courseController = TextEditingController();
     _studentIdController = TextEditingController();
-    _emailController = TextEditingController();
     _phoneController = TextEditingController();
-    _loadProfile();
   }
 
   @override
@@ -44,44 +42,37 @@ class _ProfilePageState extends State<ProfilePage> {
     _facultyController.dispose();
     _courseController.dispose();
     _studentIdController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    final profile = await _profileService.loadProfile();
-    setState(() {
-      _profile = profile;
-      _fillControllers(profile);
-    });
-  }
-
-  void _fillControllers(StudentProfile profile) {
+  void _fillControllers(UserHiveModel profile) {
     _nameController.text = profile.fullName;
     _groupController.text = profile.group;
     _facultyController.text = profile.faculty;
     _courseController.text = profile.course.toString();
     _studentIdController.text = profile.studentId;
-    _emailController.text = profile.email;
     _phoneController.text = profile.phone;
   }
 
-  Future<void> _saveProfile() async {
-    if (_profile == null) return;
-
-    _profile!.fullName = _nameController.text.trim();
-    _profile!.group = _groupController.text.trim();
-    _profile!.faculty = _facultyController.text.trim();
-    _profile!.course = int.tryParse(_courseController.text.trim()) ?? 1;
-    _profile!.studentId = _studentIdController.text.trim();
-    _profile!.email = _emailController.text.trim();
-    _profile!.phone = _phoneController.text.trim();
-
-    await _profileService.saveProfile(_profile!);
-
-    setState(() => _isEditing = false);
-
+  Future<void> _saveProfile(UserHiveModel current) async {
+    setState(() => _saving = true);
+    final updated = UserHiveModel(
+      uid: current.uid,
+      email: current.email,
+      fullName: _nameController.text.trim(),
+      group: _groupController.text.trim(),
+      faculty: _facultyController.text.trim(),
+      course: int.tryParse(_courseController.text.trim()) ?? current.course,
+      studentId: _studentIdController.text.trim(),
+      phone: _phoneController.text.trim(),
+      role: current.role,
+    );
+    await FirestoreSyncService().updateUser(updated);
+    setState(() {
+      _saving = false;
+      _isEditing = false;
+    });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Профиль сақталды ✓')),
@@ -92,11 +83,21 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final profile = ref.watch(currentUserProvider);
 
-    if (_profile == null) {
+    if (profile == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
+    }
+
+    // Бірінші рет жүктелгенде өрістерді толтыру
+    if (!_isEditing &&
+        _nameController.text.isEmpty &&
+        profile.fullName.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fillControllers(profile);
+      });
     }
 
     return Scaffold(
@@ -108,9 +109,25 @@ class _ProfilePageState extends State<ProfilePage> {
             tooltip: _isEditing ? 'Болдырмау' : 'Өңдеу',
             onPressed: () {
               if (_isEditing) {
-                _fillControllers(_profile!); // Өзгерістерді қайтару
+                _fillControllers(profile);
+              } else {
+                _fillControllers(profile);
               }
               setState(() => _isEditing = !_isEditing);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Шығу',
+            onPressed: () async {
+              await ref.read(authServiceProvider).signOut();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (_) => false,
+                );
+              }
             },
           ),
         ],
@@ -119,13 +136,12 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Аватар
             CircleAvatar(
               radius: 50,
               backgroundColor: colorScheme.primaryContainer,
               child: Text(
-                _profile!.fullName.isNotEmpty
-                    ? _profile!.fullName[0].toUpperCase()
+                profile.fullName.isNotEmpty
+                    ? profile.fullName[0].toUpperCase()
                     : '?',
                 style: TextStyle(
                   fontSize: 36,
@@ -135,41 +151,46 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 8),
-            if (!_isEditing)
+            if (!_isEditing) ...[
               Text(
-                _profile!.fullName,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                profile.fullName,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
-            if (!_isEditing)
               Text(
-                '${_profile!.group} • ${_profile!.course}-курс',
+                '${profile.group} • ${profile.course}-курс',
                 style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
+            ],
             const SizedBox(height: 24),
-
-            // Профиль өрістері
             _buildField('Аты-жөні', _nameController, Icons.person, colorScheme),
             _buildField('Тобы', _groupController, Icons.group, colorScheme),
             _buildField('Факультет', _facultyController, Icons.school, colorScheme),
             _buildField('Курс', _courseController, Icons.stairs, colorScheme,
                 keyboardType: TextInputType.number),
             _buildField('Студент ID', _studentIdController, Icons.badge, colorScheme),
-            _buildField('Email', _emailController, Icons.email, colorScheme,
-                keyboardType: TextInputType.emailAddress),
             _buildField('Телефон', _phoneController, Icons.phone, colorScheme,
                 keyboardType: TextInputType.phone),
-
+            // Email өңдеуге жатпайды
+            ListTile(
+              leading: Icon(Icons.email, color: colorScheme.primary),
+              title: const Text('Email'),
+              subtitle: Text(profile.email),
+            ),
             const SizedBox(height: 16),
-
-            // Сақтау батырмасы
             if (_isEditing)
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _saveProfile,
-                  icon: const Icon(Icons.save),
+                  onPressed: _saving ? null : () => _saveProfile(profile),
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.save),
                   label: const Text('Сақтау'),
                 ),
               ),
@@ -179,7 +200,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Профиль өрісі виджеті
   Widget _buildField(
     String label,
     TextEditingController controller,
@@ -200,16 +220,8 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : ListTile(
               leading: Icon(icon, color: colorScheme.primary),
-              title: Text(label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  )),
-              subtitle: Text(
-                controller.text.isNotEmpty ? controller.text : '—',
-                style: const TextStyle(fontSize: 16),
-              ),
-              contentPadding: EdgeInsets.zero,
+              title: Text(label),
+              subtitle: Text(controller.text.isEmpty ? '—' : controller.text),
             ),
     );
   }

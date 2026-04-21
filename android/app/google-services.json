@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "252477818911",
+    "project_id": "student-assistant-c2ea9",
+    "storage_bucket": "student-assistant-c2ea9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252477818911:android:d5d145168db3485fcbad2a",
+        "android_client_info": {
+          "package_name": "com.example.univer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQFL96ngUcHqQtFhMgqye5pd1GLhqttCk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
