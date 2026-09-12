@@ -1,17 +1,157 @@
-# univer_app
+# 🎓 Студент Көмекшісі
 
-A new Flutter project.
+**Абай атындағы Қазақ ұлттық педагогикалық университеті (ҚазҰПУ)** студенттеріне арналған мобильді қосымша.
 
-## Getting Started
+> Flutter + Firebase негізінде жасалған. Android және iOS-та жұмыс жасайды.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 📱 Қолдайтын платформалар
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+| Платформа | Жағдайы |
+|-----------|---------|
+| **Android** | ✅ Толық жұмыс жасайды |
+| **iOS** | ✅ Конфигурацияланған (Mac + Xcode қажет) |
+| **Web** | ⚙️ Базалық қолдау бар |
+| **Windows** | ⚙️ Базалық қолдау бар |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> **Маңызды:** iOS-қа жинау үшін macOS компьютері және Xcode 15+ бағдарламасы қажет. Windows-та тек Android жиналады.
+
+---
+
+## 🚀 Функционал
+
+### Студентке
+- 🔐 **Кіру / Шығу** — Firebase Auth арқылы
+- 📅 **Сабақ кестесі** — топ бойынша фильтрленген, аралық бос уақыт көрсетіледі
+- ⏱ **Бос уақыт ұсыныстары** — кестеге байланысты нақты ұсыныстар
+- 📰 **Жаңалықтар** — университет жаңалықтары
+- 🧩 **Тест** — монета жүйесімен геймификация
+- 💬 **Хабарламалар** — push хабарландыру
+- 🤖 **AI Көмекші** — OpenAI GPT арқылы қазақ тілінде жауап береді
+- 👤 **Профиль** — фото, топ, статистика
+
+### Админге
+- 👥 Студенттерді басқару
+- 📅 Сабақ кестесін қосу / өңдеу / жою
+- 📰 Жаңалық жариялау
+- 🧩 Тест санаттары мен сұрақтарын басқару
+- 📨 Студенттерге хабарлама жіберу
+
+---
+
+## 🏗 Жоба құрылымы
+
+```
+univer_app/
+├── lib/
+│   ├── main.dart              ← Қосымша басталатын нүкте
+│   ├── app/
+│   │   └── theme.dart         ← Түс, шрифт, дизайн жүйесі
+│   ├── core/
+│   │   ├── auth_service.dart          ← Кіру / сессия / шығу
+│   │   ├── firestore_sync_service.dart ← Firebase CRUD операциялары
+│   │   └── hive_service.dart          ← Офлайн кэш (телефон жады)
+│   ├── models/
+│   │   └── hive/              ← Деректер моделі (Hive + Firestore)
+│   ├── providers/
+│   │   └── app_providers.dart ← Глобалды күй (Riverpod)
+│   ├── services/
+│   │   ├── ai_service.dart            ← OpenAI API
+│   │   └── notification_service.dart  ← FCM push хабарландыру
+│   └── pages/
+│       ├── home_page.dart             ← Негізгі навигация
+│       ├── schedule_page.dart         ← Сабақ кестесі
+│       ├── free_time_page.dart        ← Бос уақыт ұсыныстары
+│       ├── quiz_page.dart             ← Тест + монета
+│       ├── news_page.dart             ← Жаңалықтар
+│       ├── messages_page.dart         ← Хабарламалар
+│       ├── ai_assistant_page.dart     ← AI чат
+│       ├── profile_page.dart          ← Профиль
+│       ├── settings_page.dart         ← Баптаулар
+│       └── admin/                     ← Админ панелі
+├── android/                   ← Android конфигурациясы
+├── ios/                       ← iOS конфигурациясы (Xcode)
+├── assets/icon/               ← Қосымша иконкасы
+├── .env                       ← Құпия кілттер (git-ке жүктелмейді)
+└── pubspec.yaml               ← Пакеттер тізімі
+```
+
+---
+
+## ⚙️ Технологиялар
+
+| Технология | Мақсаты |
+|-----------|---------|
+| **Flutter 3** | Кросс-платформа UI фреймворк |
+| **Dart** | Программалау тілі |
+| **Firebase Auth** | Аутентификация |
+| **Cloud Firestore** | Бұлтты деректер базасы |
+| **Firebase Messaging** | Push хабарландырулар |
+| **Hive** | Офлайн жергілікті кэш |
+| **Riverpod** | State management |
+| **OpenAI GPT** | AI көмекшісі |
+| **flutter_dotenv** | Құпия кілттерді `.env`-тен оқу |
+
+---
+
+## 🛠 Орнату және іске қосу
+
+### Алдын-ала талаптар
+- Flutter SDK 3.x
+- Android Studio немесе VS Code
+- Firebase жобасы конфигурацияланған
+- `.env` файлы жасалған
+
+### Қадамдар
+
+```bash
+# 1. Репозиторийді клондау
+git clone <repo-url>
+cd univer_app
+
+# 2. .env файлын жасау
+echo OPENAI_API_KEY=sk-... > .env
+
+# 3. Пакеттерді орнату
+flutter pub get
+
+# 4. Android-та іске қосу
+flutter run
+
+# 5. iOS-та іске қосу (тек macOS-та)
+flutter run -d ios
+```
+
+---
+
+## 🔐 Қауіпсіздік
+
+- `.env` файлы `.gitignore`-ға қосылған — API кілті git-ке жүктелмейді
+- Firebase Security Rules орнатылған — студент тек өз деректерін оқиды
+- Хабарламаларды тек админ жібере алады
+
+---
+
+## 📐 Flutter / Dart туралы қысқаша
+
+**Flutter** — Google жасаған фреймворк. Бір кодтан **Android + iOS + Web + Windows** қосымшасы шығады.
+
+**Widget** — Flutter-дегі негізгі ұғым. Экрандағы барлық элемент (батырма, мәтін, карточка) — widget. Олар ағаш (tree) құрайды:
+
+```
+Scaffold
+ ├── AppBar  →  жоғарғы бар
+ ├── Body
+ │    └── Column
+ │         ├── Text("Сабақ кестесі")
+ │         └── Card(...)
+ └── FloatingActionButton
+```
+
+**Деректер ағыны:**
+```
+Firebase (бұлт) → Hive (офлайн кэш) → Riverpod (глобалды күй) → Widget (экран)
+```
+
+Riverpod арқылы деректер өзгерсе — барлық байланысқан экран автоматты жаңарады.
